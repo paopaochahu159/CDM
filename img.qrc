@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/img">
+        <file>img/suspend.ico</file>
+        <file>img/new.ico</file>
+        <file>img/set.ico</file>
+        <file>img/continue.ico</file>
+        <file>img/suspend1.ico</file>
+    </qresource>
+</RCC>
