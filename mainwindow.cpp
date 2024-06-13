@@ -30,6 +30,8 @@ MainWindow::MainWindow(QWidget *parent)
     {
         qDebug()<<QString("文件夹%1已存在！").arg(folder_name);
     }
+
+
 }
 
 void MainWindow::immediately_delete(){

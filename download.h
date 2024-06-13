@@ -8,6 +8,7 @@
 #include<QNetworkAccessManager>
 #include<QNetworkReply>
 #include<QFile>
+#include<QFileDialog>
 
 //处理单个下载
 class Download : public QObject
@@ -16,8 +17,9 @@ class Download : public QObject
 public:
     explicit Download(const QUrl&, const int, QObject *parent = nullptr);
     void start();
-    void get_vecSize(const QVector<qreal>&);
-
+    void get_vecSize(const QVector<qint64>& aa){
+        a = aa;
+    }
 
 private slots:
     void onFinished();
@@ -26,15 +28,15 @@ private slots:
 signals:
     void AddTable_signal();
     void refresh_TaskWindow_signal();
-    void finished_signal();
+    void thread_finished_signal();
 
 private:
-    QNetworkAccessManager *manager; // 网络管理器
-    QNetworkReply *reply;           // 网络应答
-    QFile *file;                    // 输出文件
+    QNetworkAccessManager *manager = nullptr; // 网络管理器
+    QNetworkReply *reply = nullptr;           // 网络应答
+    QFile *file = nullptr;                    // 输出文件
     QUrl url;
-    int fileOrder;
-    QVector<qreal> a;
+    int fileOrder = 0;
+    QVector<qint64> a;
 };
 
 #include <QThread>
@@ -55,16 +57,18 @@ public:
 
 private slots:
     // 处理下载完成
-    // void handleDownloadFinished();
+    void merging_data();
 
 private:
-    void divide_equally(const qreal& fileSize);
+    void divide_equally(const qint64& fileSize);
 
 
 private:
     QList<QThread*> threads; // 线程列表
     QList<Download*> tasks; // 任务列表
-    QVector<QVector<qreal>> vecSize;
+    QVector<QVector<qint64>> vecSize;
+
+    QAtomicInt done = 0;
 
     QUrl url;
     qint64 fileSize;
