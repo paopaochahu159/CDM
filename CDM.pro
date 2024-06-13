@@ -9,12 +9,14 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    download.cpp \
     main.cpp \
     mainwindow.cpp \
     taskwindow.cpp
 
 HEADERS += \
     ThreadPool.h \
+    download.h \
     mainwindow.h \
     taskwindow.h
 
