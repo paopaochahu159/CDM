@@ -1,9 +1,9 @@
 #include "download.h"
 
-Download::Download(const QUrl &u, const int i, QObject *parent)
+Download::Download(const QUrl & u, const int i, QObject *parent)
     : QObject{parent}
-    ,url(u)
     ,fileOrder(i)
+    , url(u)
 { }
 
 void Download::start(){
@@ -24,7 +24,7 @@ void Download::start(){
                      .arg(fileOrder)
                      .arg(url.fileName())
                      );
-    if (!file->open(QIODevice::WriteOnly)) {
+    if (!file->open(QIODevice::WriteOnly)){
         return;
     }
 
@@ -35,7 +35,7 @@ void Download::start(){
 }
 
 void Download::onFinished(){
-    qDebug() << "线程" + QString::number(fileOrder) + "下载完成";
+    qDebug() << url.fileName() << "线程" + QString::number(fileOrder) + "下载完成";
     if (file) {
         file->write(reply->readAll());
         file->close();
@@ -43,21 +43,23 @@ void Download::onFinished(){
     reply->deleteLater();
     delete file;
     delete manager;
-    emit thread_finished_signal();
+    emit thread_finished_signal(fileOrder);
 }
 
 void Download::onDownloadProgress(){
-    // qDebug() << "线程" + QString::number(fileOrder) + "更新进度";
+    qDebug() << url.fileName() <<  "线程" + QString::number(fileOrder) + "更新进度";
     if (file) {
         file->write(reply->readAll());
     }
     emit refresh_TaskWindow_signal();
 }
 
+
+
 // 构造函数
-DownloadManager::DownloadManager(const QUrl &url, QObject *parent)
+DownloadManager::DownloadManager(const QUrl &u, QObject *parent)
     : QObject(parent)
-    ,url(url)
+    , url(u)
 {
     //获得文件大小
     QNetworkAccessManager *m = new QNetworkAccessManager;
@@ -87,6 +89,7 @@ void DownloadManager::divide_equally(const qint64& fileSize){
     //余数部分加入最后一个
     vecSize[nnn - 1][1] = fileSize;
     qDebug() << vecSize;
+    emit button_true();
 }
 
 // 析构函数，清理资源
@@ -113,7 +116,7 @@ void DownloadManager::addDownload()
 
         // 连接信号和槽
         connect(thread, &QThread::started, task, &Download::start);
-        connect(task, &Download::thread_finished_signal, this, &DownloadManager::merging_data);
+        connect(task, &Download::thread_finished_signal, this, &DownloadManager::preserve);
         connect(task, &Download::thread_finished_signal, thread, &QThread::quit);
         connect(task, &Download::thread_finished_signal, task, &Download::deleteLater);
         connect(thread, &QThread::finished, thread, &QThread::deleteLater);
@@ -127,26 +130,29 @@ void DownloadManager::addDownload()
     }
 }
 
-void DownloadManager::merging_data(){
-    done++;
-    if (done < 4){
-        return;
+void DownloadManager::preserve(const int i){
+    temporaryFiles.append(QString::number(i) + url.fileName());
+    if (temporaryFiles.size() == 4){
+        temporaryFiles.sort();
+        merging_data();
     }
-    QString path = QCoreApplication::applicationDirPath() + "/temporary files/";
-    qDebug() << "全部下载完成！";
-    QDir Dir(path);         //查看工作路径是否存在
-    Dir.setFilter(QDir::Files);                     			//设置过滤器只查看文件
-    QStringList list = Dir.entryList(QDir::Files);  			//获取所有文件
+}
 
-    QFile final_file(path + list[0]);
+void DownloadManager::merging_data(){
+    QString path = QCoreApplication::applicationDirPath() + "/temporary files/";
+    QString filename = url.fileName();
+    qDebug() << '\n' << filename << "全部下载完成！" << '\n';
+
+    qDebug() << temporaryFiles;
+
+    QFile final_file(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/" + filename);
     if (!final_file.open(QIODevice::Append)){
         qDebug() << "写入打开失败：" << final_file.fileName();
         return;
     }
 
-    for (int i = 1; i < 4; i++){
-        qDebug() << list[i];
-        QFile temporary(path + list[i]);
+    for (int i = 0; i < 4; i++){
+        QFile temporary(path + temporaryFiles[i]);
         if (!temporary.open(QIODevice::ReadOnly)){
             qDebug() << "读取打开失败：" << temporary.fileName();
             return;

@@ -14,12 +14,6 @@ using namespace std;
 
 #include<QDir>
 
-struct Download_TaskWindow{
-    TaskWindow *task = nullptr;
-    Download *d = nullptr;
-    bool b = false;
-};
-
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -48,10 +42,9 @@ private:
 
 private:
     Ui::MainWindow *ui;
-    //正则表达式
-    static QRegularExpression urlRegex;
 
-    Download_TaskWindow dt;
-    vector<Download_TaskWindow> maintain_queue;
+
+    TaskWindow* task = nullptr;
+    vector<TaskWindow *> maintain_queue;
 };
 #endif // MAINWINDOW_H

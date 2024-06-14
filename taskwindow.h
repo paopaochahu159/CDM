@@ -44,8 +44,8 @@ private:
 private:
     Ui::TaskWindow *ui;
     QWidget *whiteWidget;
-
     QUrl url;
+
     DownloadManager *dow;
 
     bool b = false;
