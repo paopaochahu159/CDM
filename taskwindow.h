@@ -15,13 +15,16 @@ class TaskWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit TaskWindow(const QUrl&, QWidget *parent = nullptr);
+    explicit TaskWindow(const QUrl&, const int, QWidget *parent = nullptr);
     ~TaskWindow();
+    void refresh_location(){
+        --location;
+    }
 
 signals:
     //发出维护信号 通知维护这个下载任务
-    void maintain_signal();
-    void delete_signal();
+    void start_signal(const int, const QString&, const double&);
+    void close_signal();
 
 private slots:
     //刷新界面
@@ -33,22 +36,18 @@ private slots:
 
 private:
     virtual void closeEvent(QCloseEvent* event) override{
-        if (b){
-            event->accept();
-            return;
-        }
-        emit delete_signal();
+        emit close_signal();
         event->accept();
     }
 
 private:
     Ui::TaskWindow *ui;
     QWidget *whiteWidget;
+    //用于确定本窗口在维护队列的位置
+    int location = 0;
+
     QUrl url;
-
-    DownloadManager *dow;
-
-    bool b = false;
+    DownloadManager *downloadManager;
 };
 
 #endif // TASKWINDOW_H

@@ -1,33 +1,35 @@
 #include "taskwindow.h"
 #include "ui_taskwindow.h"
 
-TaskWindow::TaskWindow(const QUrl &u, QWidget *parent)
+TaskWindow::TaskWindow(const QUrl &u, const int i, QWidget *parent)
     : QDialog(parent)
-    , ui(new Ui::TaskWindow)
-    , url(u)
+    ,ui(new Ui::TaskWindow)
+    ,location(i)
+    ,url(u)
 {
     ui->setupUi(this);
-    qDebug() << url;
+    downloadManager = new DownloadManager(url);
 
-    dow = new DownloadManager(url);
+    ui->label->setText(url.toString());
+    ui->pushButton_2->setEnabled(false);
+    connect(downloadManager, &DownloadManager::header_OK, this, [this](const QString& s, const double& n){
+        ui->pushButton_2->setEnabled(true);
+        setWindowTitle(s);
+        ui->label_8->setText(QString::number(n));
+    });
 
     //设置区域背景颜色为白色
     whiteWidget = new QWidget(this);
     whiteWidget->lower();
     whiteWidget->setGeometry(10, 10, 410, 165);
     whiteWidget->setStyleSheet("background-color: white;");
-
-    ui->label->setText(url.fileName());
-
-    ui->pushButton_2->setEnabled(false);
-    connect(dow, &DownloadManager::button_true, this, [this]{
-        ui->pushButton_2->setEnabled(true);
-    });
 }
 
 TaskWindow::~TaskWindow()
 {
-    delete whiteWidget;
+    qDebug() << "删除窗口" << location;
+    // downloadManager->deleteLater();
+    whiteWidget->deleteLater();
     delete ui;
 }
 
@@ -37,11 +39,7 @@ void TaskWindow::refresh_the_page(){
 
 void TaskWindow::on_pushButton_2_clicked()
 {
-     // connect(thread, &QThread::started, dow, & DownloadManager::addDownload);
-    dow->addDownload();
-
-    // dow->start();
-    b = true;
-    emit maintain_signal();
+    downloadManager->startDownload();
+    emit start_signal(location, windowTitle(), ui->label_8->text().toDouble());
 }
 

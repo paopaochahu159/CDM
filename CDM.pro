@@ -12,16 +12,18 @@ SOURCES += \
     download.cpp \
     main.cpp \
     mainwindow.cpp \
+    setupwindow.cpp \
     taskwindow.cpp
 
 HEADERS += \
-    ThreadPool.h \
     download.h \
     mainwindow.h \
+    setupwindow.h \
     taskwindow.h
 
 FORMS += \
     mainwindow.ui \
+    setupwindow.ui \
     taskwindow.ui
 
 # Default rules for deployment.
@@ -31,3 +33,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     img.qrc
+
+RC_ICONS = myico.ico

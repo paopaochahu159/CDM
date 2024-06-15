@@ -1,17 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include<iostream>
-using namespace std;
-
 #include"taskwindow.h"
-#include"download.h"
+#include"setupwindow.h"
 
 #include <QMainWindow>
-
 #include<QInputDialog>
 #include<QMessageBox>
-
 #include<QDir>
 
 QT_BEGIN_NAMESPACE
@@ -34,17 +29,28 @@ private slots:
     //删除任务
     void on_actionD_triggered();
     void add_table();
-    void maintain();
+    void start_download(const int, const QString&, const double&);
     void immediately_delete();
+
+    void on_actionSet_triggered();
 
 private:
     QString get_url();
+    virtual void closeEvent(QCloseEvent* event) override{
+        for (TaskWindow* t : maintain_queue){
+            if (t != nullptr){
+                t->accept();
+                delete t;
+            }
+            maintain_queue.clear();
+        }
+        event->accept();
+    }
 
 private:
     Ui::MainWindow *ui;
 
-
-    TaskWindow* task = nullptr;
-    vector<TaskWindow *> maintain_queue;
+    int location = 0;
+    QVector<TaskWindow *> maintain_queue;
 };
 #endif // MAINWINDOW_H

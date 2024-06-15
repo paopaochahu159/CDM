@@ -5,5 +5,6 @@
         <file>img/set.ico</file>
         <file>img/continue.ico</file>
         <file>img/suspend1.ico</file>
+        <file>img/xiazai.ico</file>
     </qresource>
 </RCC>
