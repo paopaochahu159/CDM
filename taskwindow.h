@@ -3,6 +3,8 @@
 
 #include <QDialog>
 #include<QCloseEvent>
+#include<QProgressBar>
+#include<QTimer>
 
 #include"download.h"
 
@@ -25,6 +27,7 @@ signals:
     //发出维护信号 通知维护这个下载任务
     void start_signal(const int, const QString&, const double&);
     void close_signal();
+    void schedule_updat_signal(const int, const double, const double);
 
 private slots:
     //刷新界面
@@ -33,6 +36,9 @@ private slots:
     void onFinished(){
         qDebug() << 1;
     }
+    void add_progressBar();
+    void refresh_signal(const int, const qint64, const qint64);
+    void schedule_update();
 
 private:
     virtual void closeEvent(QCloseEvent* event) override{
@@ -43,8 +49,13 @@ private:
 private:
     Ui::TaskWindow *ui;
     QWidget *whiteWidget;
+    QVector<QProgressBar *> bars;
+
     //用于确定本窗口在维护队列的位置
     int location = 0;
+    qint64 Existing_bytes_size = 0;
+    QTimer *timer;
+    QTime startTime;
 
     QUrl url;
     DownloadManager *downloadManager;

@@ -10,7 +10,9 @@ Download::Download(const QUrl & u, const int i, const QVector<qint64>& aa, QObje
 { }
 
 Download::~Download(){
-    qDebug() << fileOrder;
+    if (file != nullptr) delete file;
+    if (manager != nullptr) manager->deleteLater();
+    if (reply != nullptr) reply->deleteLater();
 }
 
 void Download::start(){
@@ -54,11 +56,14 @@ void Download::onFinished(){
     emit thread_finished_signal();
 }
 
-void Download::onDownloadProgress(){
-    qDebug() << url.fileName() <<  "线程" + QString::number(fileOrder) + "更新进度";
-    if (file != nullptr) {
-        file->write(reply->readAll());
+void Download::onDownloadProgress(const qint64 &bytesReceived, const qint64 &bytesTotal){
+    // qDebug() << url.fileName() <<  "线程" + QString::number(fileOrder) + "更新进度";
+    if (file == nullptr){
+        qDebug() << "文件异常";
+        return;
     }
+    file->write(reply->readAll());
+    emit refresh_signal(fileOrder, bytesReceived, bytesTotal);
 }
 
 
@@ -122,19 +127,17 @@ void DownloadManager::divide_equally(const qint64& fileSize){
 // 析构函数，清理资源
 DownloadManager::~DownloadManager()
 {
-    // for (int i = 0; i < tasks.size(); i++){
-    //     if (threads[i] != nullptr) {
-    //         qDebug() << "线程或者运行，已阻塞并释放";
-    //         threads[i]->quit();
-    //         threads[i]->wait();
-    //         threads[i]->deleteLater();
-    //         tasks[i]->deleteLater();
-    //     } else {
-    //         qDebug() << "线程已结束";
-    //     }
-    // }
-    // tasks.clear();
-    // threads.clear();
+    for (int i = 0; i < threads.size(); i++){
+        if (threads[i] != nullptr) {
+            qDebug() << "线程或者运行，已阻塞并释放";
+            threads[i]->quit();
+            threads[i]->wait();
+            threads[i]->deleteLater();
+            tasks[i]->deleteLater();
+        } else {
+            qDebug() << "线程已结束";
+        }
+    }
 }
 
 // 开始任务
@@ -147,6 +150,7 @@ void DownloadManager::startDownload()
         task->moveToThread(thread);
 
         // 连接信号和槽
+        connect(task, &Download::refresh_signal, this, &DownloadManager::refresh_signal);
         connect(thread, &QThread::started, task, &Download::start);
         connect(task, &Download::thread_finished_signal, this, [this]{
             num++;
@@ -156,11 +160,15 @@ void DownloadManager::startDownload()
         });
         connect(task, &Download::thread_finished_signal, thread, &QThread::quit);
         connect(task, &Download::thread_finished_signal, task, &Download::deleteLater);
-        connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+        connect(thread, &QThread::finished, thread, [i, this]{
+            threads[i]->deleteLater();
+            threads[i] = nullptr;
+        });
 
         // 添加到列表中
         threads.append(thread);
         tasks.append(task);
+        emit add_progress();
 
         // 启动线程
         thread->start();
@@ -171,22 +179,24 @@ void DownloadManager::merging_data(){
     QString path = QCoreApplication::applicationDirPath() + "/temporary files/%1" + url.fileName();
     qDebug() << '\n' << fileName << "全部下载完成！" << '\n';
 
-    QFile final_file(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/" + fileName);
-    if (!final_file.open(QIODevice::Append)){
-        qDebug() << "写入打开失败：" << final_file.fileName();
-        return;
-    }
-
-    for (int i = 0; i < thread_quantity; i++){
-        QFile temporary(path.arg(i));
-        if (!temporary.open(QIODevice::ReadOnly)){
-            qDebug() << "读取打开失败：" << temporary.fileName();
+    std::thread  ttt([path, this]{
+        QFile final_file(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/" + fileName);
+        if (!final_file.open(QIODevice::Append)){
+            qDebug() << "写入打开失败：" << final_file.fileName();
             return;
         }
-        QByteArray content = temporary.readAll();
-        final_file.write(content);
-        temporary.close();
-        temporary.remove();
-    }
-    final_file.close();
+
+        for (int i = 0; i < thread_quantity; i++){
+            QFile temporary(path.arg(i));
+            if (!temporary.open(QIODevice::ReadOnly)){
+                qDebug() << "读取打开失败：" << temporary.fileName();
+                return;
+            }
+            QByteArray content = temporary.readAll();
+            final_file.write(content);
+            temporary.remove();
+        }
+        final_file.close();
+    });
+    ttt.detach();
 }

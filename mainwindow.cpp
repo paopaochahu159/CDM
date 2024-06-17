@@ -74,20 +74,26 @@ void MainWindow::on_actionNew_triggered()
         return;
     QUrl url(u);
     TaskWindow* task = new TaskWindow(url, location++);
+    //连接信号与曹 实现Download通知窗口进行相应操作
+    connect(task, &TaskWindow::start_signal, this, &MainWindow::start_download);
+    connect(task, &TaskWindow::schedule_updat_signal, this, [this](const int row, const double a, const double b){
+        ui->tableWidget->item(row, 3)->setText(QString::number(a) + " MB/秒");
+        ui->tableWidget->item(row, 4)->setText(QString::number(b) + "秒");
+    });
+
     task->setWindowIcon(QIcon(":/img/img/xiazai.ico"));
     task->show();
 
     add_table();
     maintain_queue.append(task);
 
-    //连接信号与曹 实现Download通知窗口进行相应操作
-    connect(task, &TaskWindow::start_signal, this, &MainWindow::start_download);
+
 }
 
 void MainWindow::start_download(const int row,  const QString& fileName, const double& size){
     qDebug() << "start_download";
     ui->tableWidget->item(row, 0)->setText(fileName);
-    ui->tableWidget->item(row, 1)->setText(QString::number(size));
+    ui->tableWidget->item(row, 1)->setText(QString::number(size) + " MB");
     ui->tableWidget->item(row, 2)->setText("正在下载");
 }
 

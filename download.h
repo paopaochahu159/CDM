@@ -21,10 +21,10 @@ public:
 
 private slots:
     void onFinished();
-    void onDownloadProgress();
+    void onDownloadProgress(const qint64&, const qint64&);
 
 signals:
-    void refresh_TaskWindow_signal();
+    void refresh_signal(const int, const qint64, const qint64);
     void thread_finished_signal();
 
 private:
@@ -58,6 +58,9 @@ public:
 signals:
     //头部信息解析完成 可用解开按钮并更新界面
     void header_OK(const QString&, const double&);
+    void add_progress();
+    void refresh_signal(const int, const qint64, const qint64);
+
 
 
 private slots:
@@ -73,6 +76,7 @@ private:
     QList<QThread*> threads; // 线程列表
     QList<Download*> tasks; // 任务列表
     QVector<QVector<qint64>> vecSize;
+
 
     QUrl url;
     QString fileName;
