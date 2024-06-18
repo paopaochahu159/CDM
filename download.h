@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QDialog>
 
+#include<QMutexLocker>
+
 #include<QUrl>
 #include<QNetworkAccessManager>
 #include<QNetworkReply>
@@ -18,6 +20,9 @@ public:
     explicit Download(const QUrl&, const int, const QVector<qint64>&, QObject *parent = nullptr);
     ~Download();
     void start();
+    void stop();
+    void go_on();
+
 
 private slots:
     void onFinished();
@@ -30,10 +35,13 @@ signals:
 private:
     QNetworkAccessManager *manager = nullptr; // 网络管理器
     QNetworkReply *reply = nullptr;           // 网络应答
-    QFile *file = nullptr;                    // 输出文件
+    QString m_fileName;
+    QMutex mutex;
 
     int fileOrder = 0;
     QVector<qint64> a;
+    qint64 bytes = 0;
+    qint64 m_bytesReceived = 0;
     QUrl url;
 };
 
@@ -51,15 +59,17 @@ public:
     // 构造函数
     DownloadManager(const QUrl&, QObject *parent = nullptr);
     ~DownloadManager();
-
-    // 添加一个下载任务
+    // 开始下载任务
     void startDownload();
+    void stop();
+    void go_on();
 
 signals:
     //头部信息解析完成 可用解开按钮并更新界面
     void header_OK(const QString&, const double&);
     void add_progress();
     void refresh_signal(const int, const qint64, const qint64);
+    void completes_signals();
 
 
 

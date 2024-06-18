@@ -28,17 +28,17 @@ signals:
     void start_signal(const int, const QString&, const double&);
     void close_signal();
     void schedule_updat_signal(const int, const double, const double);
+    void state_signal(const int);
 
 private slots:
-    //刷新界面
-    void refresh_the_page();
     void on_pushButton_2_clicked();
-    void onFinished(){
-        qDebug() << 1;
-    }
     void add_progressBar();
     void refresh_signal(const int, const qint64, const qint64);
     void schedule_update();
+
+    void on_pushButton_3_clicked();
+
+    void on_pushButton_4_clicked();
 
 private:
     virtual void closeEvent(QCloseEvent* event) override{

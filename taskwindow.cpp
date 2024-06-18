@@ -11,6 +11,13 @@ TaskWindow::TaskWindow(const QUrl &u, const int i, QWidget *parent)
 {
     ui->setupUi(this);
     downloadManager = new DownloadManager(url);
+    connect(downloadManager, &DownloadManager::completes_signals, this, [this]{
+        qDebug() << 111111;
+        timer->stop();
+        ui->progressBar->setValue(100);
+        ui->label_6->setText("0.00 秒");
+        emit state_signal(location);
+    });
     connect(downloadManager, &DownloadManager::add_progress, this, &TaskWindow::add_progressBar);
     connect(downloadManager, &DownloadManager::refresh_signal, this, &TaskWindow::refresh_signal);
 
@@ -39,7 +46,7 @@ TaskWindow::TaskWindow(const QUrl &u, const int i, QWidget *parent)
     //设置区域背景颜色为白色
     whiteWidget = new QWidget(this);
     whiteWidget->lower();
-    whiteWidget->setGeometry(10, 10, 410, 165);
+    whiteWidget->setGeometry(10, 10, 460, 190);
     whiteWidget->setStyleSheet("background-color: white;");
 }
 
@@ -49,10 +56,6 @@ TaskWindow::~TaskWindow()
     downloadManager->deleteLater();
     whiteWidget->deleteLater();
     delete ui;
-}
-
-void TaskWindow::refresh_the_page(){
-    qDebug() << "refresh the page";
 }
 
 #include<QTime>
@@ -100,5 +103,18 @@ void TaskWindow::refresh_signal(const int i, const qint64 bytesReceived, const q
     Existing_bytes_size += bytesReceived;
     int progress = static_cast<int>((bytesReceived * 100) / bytesTotal);
     bars[i]->setValue(progress);
+}
+
+void TaskWindow::on_pushButton_3_clicked()
+{
+    timer->stop();
+    downloadManager->stop();
+}
+
+
+void TaskWindow::on_pushButton_4_clicked()
+{
+    downloadManager->go_on();
+    timer->start(100);
 }
 

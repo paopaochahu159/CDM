@@ -1,5 +1,7 @@
 #include "download.h"
 
+
+
 extern const int thread_quantity;
 
 Download::Download(const QUrl & u, const int i, const QVector<qint64>& aa, QObject *parent)
@@ -10,7 +12,6 @@ Download::Download(const QUrl & u, const int i, const QVector<qint64>& aa, QObje
 { }
 
 Download::~Download(){
-    if (file != nullptr) delete file;
     if (manager != nullptr) manager->deleteLater();
     if (reply != nullptr) reply->deleteLater();
 }
@@ -26,14 +27,11 @@ void Download::start(){
     net.setRawHeader("User-Agent",
                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
 
-    file = new QFile(QString("%1/temporary files/%2%3")
-                         .arg(QCoreApplication::applicationDirPath())
-                         .arg(fileOrder)
-                         .arg(url.fileName()));
-    if (!file->open(QIODevice::WriteOnly)){
-        qDebug() << "临时文件打开失败：" << file->fileName();
-        return;
-    }
+    m_fileName = QString("%1/temporary files/%2%3")
+                     .arg(QCoreApplication::applicationDirPath())
+                     .arg(fileOrder)
+                     .arg(url.fileName());
+
 
     reply = manager->get(net);
     connect(reply, &QNetworkReply::finished, this, &Download::onFinished);
@@ -41,15 +39,18 @@ void Download::start(){
 }
 
 void Download::onFinished(){
+    QMutexLocker locker(&mutex);
     qDebug() << url.fileName() << "线程" + QString::number(fileOrder) + "下载完成";
-    if (file != nullptr){
-        file->write(reply->readAll());
-        file->close();
+
+    QFile file(m_fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Append))
+    {
+        file.write(reply->readAll());
     }
+    file.close();
+
     reply->deleteLater();
-    delete file;
     manager->deleteLater();
-    file = nullptr;
     manager = nullptr;
     reply = nullptr;
 
@@ -57,15 +58,65 @@ void Download::onFinished(){
 }
 
 void Download::onDownloadProgress(const qint64 &bytesReceived, const qint64 &bytesTotal){
-    // qDebug() << url.fileName() <<  "线程" + QString::number(fileOrder) + "更新进度";
-    if (file == nullptr){
-        qDebug() << "文件异常";
-        return;
+    QMutexLocker locker(&mutex);
+    bytes = bytesReceived;
+    // qDebug() << url.fileName() <<  "线程" << fileOrder << "更新进度" << bytes;
+
+    QFile file(m_fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Append))
+    {
+        file.write(reply->readAll());
     }
-    file->write(reply->readAll());
-    emit refresh_signal(fileOrder, bytesReceived, bytesTotal);
+    file.close();
+
+    emit refresh_signal(fileOrder, m_bytesReceived + bytes, m_bytesReceived + bytesTotal);
 }
 
+void Download::stop(){
+    QMutexLocker locker(&mutex);
+
+    disconnect(reply, &QNetworkReply::finished, this, &Download::onFinished);
+    disconnect(reply, &QNetworkReply::downloadProgress, this, &Download::onDownloadProgress);
+    a[0] += bytes + 1;
+    m_bytesReceived = bytes;
+    reply->abort();
+    reply->deleteLater();
+    manager->deleteLater();
+    manager = nullptr;
+    reply = nullptr;
+}
+
+void Download::go_on(){
+    QMutexLocker locker(&mutex);
+
+    qDebug() << fileOrder << "启动";
+    manager = new QNetworkAccessManager();
+    QNetworkRequest net(url);
+    qDebug() << "线程：" <<fileOrder << "暂停下载位置:  " << a;
+    net.setRawHeader(QByteArray("Range"), QString("bytes=%1-%2")
+                                              .arg(a[0])
+                                              .arg(a[1])
+                                              .toLocal8Bit()
+                     );
+    net.setRawHeader("User-Agent",
+                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+
+    reply = manager->get(net);
+    connect(reply, &QNetworkReply::finished, this, &Download::onFinished);
+    connect(reply, &QNetworkReply::downloadProgress, this, &Download::onDownloadProgress);
+
+}
+
+
+/*
+ * 断点续传存在问题：
+ * 1.恢复下载立即奔溃或过一段时间奔溃
+ * 2.出现某个线程停止下载
+ * 3.全部下载完成后最终文件不可用
+ * 4.某个线程下载完成时奔溃
+ *
+ * 开启vpn的时候下载会突然停止
+*/
 
 
 
@@ -109,6 +160,7 @@ void DownloadManager:: get_SizeAndName(QNetworkReply* headReply){
     headReply->deleteLater();
     headReply->manager()->deleteLater();
 }
+
 //分配每个线程下载的区域
 void DownloadManager::divide_equally(const qint64& fileSize){
     qDebug() << fileSize;
@@ -121,7 +173,7 @@ void DownloadManager::divide_equally(const qint64& fileSize){
     }
     //余数部分加入最后一个
     vecSize[thread_quantity - 1][1] = fileSize;
-    // qDebug() << vecSize;
+    qDebug() << vecSize;
 }
 
 // 析构函数，清理资源
@@ -199,4 +251,17 @@ void DownloadManager::merging_data(){
         final_file.close();
     });
     ttt.detach();
+    emit completes_signals();
+}
+
+void DownloadManager::stop(){
+    for (Download *d : tasks){
+        d->stop();
+    }
+}
+
+void DownloadManager::go_on(){
+    for (Download *d : tasks){
+        d->go_on();
+    }
 }

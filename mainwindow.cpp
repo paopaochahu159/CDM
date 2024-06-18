@@ -48,7 +48,7 @@ QString MainWindow::get_url(){
     in->setLabelText("地址：");
 
     // 获取文本输入
-    if (in->exec() != QInputDialog::Accepted) {
+    if (in->exec() != QInputDialog::Accepted){
         delete in;
         return "";
     }
@@ -68,13 +68,18 @@ QString MainWindow::get_url(){
 //创建新任务
 void MainWindow::on_actionNew_triggered()
 {
-    QString u = get_url();
-    // QString u = "https://vscode.download.prss.microsoft.com/dbazure/download/stable/dc96b837cf6bb4af9cd736aa3af08cf8279f7685/VSCodeSetup-x64-1.89.1.exe";
+    // QString u = get_url();
+    QString u = "https://download.cocos.com/CocosDashboard/v2.1.3/CocosDashboard-v2.1.3-win-042311.exe";
     if (u.isEmpty())
         return;
     QUrl url(u);
     TaskWindow* task = new TaskWindow(url, location++);
     //连接信号与曹 实现Download通知窗口进行相应操作
+    connect(task, &TaskWindow::state_signal, this, [this](const int row){
+        qDebug() << 2222222;
+        ui->tableWidget->item(row, 2)->setText("完成");
+        ui->tableWidget->item(row, 4)->setText("0.00 秒");
+    });
     connect(task, &TaskWindow::start_signal, this, &MainWindow::start_download);
     connect(task, &TaskWindow::schedule_updat_signal, this, [this](const int row, const double a, const double b){
         ui->tableWidget->item(row, 3)->setText(QString::number(a) + " MB/秒");
@@ -86,8 +91,6 @@ void MainWindow::on_actionNew_triggered()
 
     add_table();
     maintain_queue.append(task);
-
-
 }
 
 void MainWindow::start_download(const int row,  const QString& fileName, const double& size){
