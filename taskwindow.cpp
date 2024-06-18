@@ -10,6 +10,7 @@ TaskWindow::TaskWindow(const QUrl &u, const int i, QWidget *parent)
     ,url(u)
 {
     ui->setupUi(this);
+
     downloadManager = new DownloadManager(url);
     connect(downloadManager, &DownloadManager::completes_signals, this, [this]{
         qDebug() << 111111;
@@ -22,25 +23,11 @@ TaskWindow::TaskWindow(const QUrl &u, const int i, QWidget *parent)
     connect(downloadManager, &DownloadManager::refresh_signal, this, &TaskWindow::refresh_signal);
 
     ui->label->setText(url.toString());
-    ui->pushButton_2->setEnabled(false);
     connect(downloadManager, &DownloadManager::header_OK, this, [this](const QString& s, const double& n){
         ui->pushButton_2->setEnabled(true);
         setWindowTitle(s);
         ui->label_8->setText(QString::number(n));
     });
-    ui->progressBar->setStyleSheet(R"(QProgressBar{
-                                    font:9pt;
-                                    border-radius:5px;
-                                    text-align:center;
-                                    border:1px solid #E8EDF2;
-                                    background-color: rgb(255, 255, 255);
-                                    border-color: rgb(180, 180, 180);
-                                }
-                                QProgressBar:chunk{
-                                    border-radius:5px;
-                                    background-color:#1ABC9C;
-                                }
-                )");
     ui->progressBar->setRange(0, 0);
 
     //设置区域背景颜色为白色

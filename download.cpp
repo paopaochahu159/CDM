@@ -1,7 +1,5 @@
 #include "download.h"
 
-
-
 extern const int thread_quantity;
 
 Download::Download(const QUrl & u, const int i, const QVector<qint64>& aa, QObject *parent)
@@ -32,22 +30,28 @@ void Download::start(){
                      .arg(fileOrder)
                      .arg(url.fileName());
 
+    file = new QFile(m_fileName);
+    if (file->open(QIODevice::WriteOnly | QIODevice::Append)) {
+    }
 
     reply = manager->get(net);
     connect(reply, &QNetworkReply::finished, this, &Download::onFinished);
+    connect(reply, &QNetworkReply::readyRead, this, &Download::onReadyRead);
     connect(reply, &QNetworkReply::downloadProgress, this, &Download::onDownloadProgress);
+}
+
+void Download::onReadyRead(){
+    QMutexLocker locker(&mutex);
+    file->write(reply->readAll());
 }
 
 void Download::onFinished(){
     QMutexLocker locker(&mutex);
     qDebug() << url.fileName() << "线程" + QString::number(fileOrder) + "下载完成";
 
-    QFile file(m_fileName);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Append))
-    {
-        file.write(reply->readAll());
-    }
-    file.close();
+    file->write(reply->readAll());
+    file->close();
+
 
     reply->deleteLater();
     manager->deleteLater();
@@ -60,38 +64,42 @@ void Download::onFinished(){
 void Download::onDownloadProgress(const qint64 &bytesReceived, const qint64 &bytesTotal){
     QMutexLocker locker(&mutex);
     bytes = bytesReceived;
-    // qDebug() << url.fileName() <<  "线程" << fileOrder << "更新进度" << bytes;
-
-    QFile file(m_fileName);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Append))
-    {
-        file.write(reply->readAll());
-    }
-    file.close();
-
-    emit refresh_signal(fileOrder, m_bytesReceived + bytes, m_bytesReceived + bytesTotal);
+    qDebug() << url.fileName() <<  "线程" << fileOrder << "更新进度" << bytes;
+    emit refresh_signal(fileOrder, m_bytesReceived + bytes,m_bytesReceived +  bytesTotal);
 }
+
+
 
 void Download::stop(){
     QMutexLocker locker(&mutex);
+    file->close();
 
     disconnect(reply, &QNetworkReply::finished, this, &Download::onFinished);
+    disconnect(reply, &QNetworkReply::readyRead, this, &Download::onReadyRead);
     disconnect(reply, &QNetworkReply::downloadProgress, this, &Download::onDownloadProgress);
-    a[0] += bytes + 1;
+    reply->abort();  // 取消当前请求
+
+    // a[0] += bytes;
     m_bytesReceived = bytes;
-    reply->abort();
     reply->deleteLater();
-    manager->deleteLater();
-    manager = nullptr;
     reply = nullptr;
 }
 
 void Download::go_on(){
     QMutexLocker locker(&mutex);
 
-    qDebug() << fileOrder << "启动";
-    manager = new QNetworkAccessManager();
     QNetworkRequest net(url);
+    QFileInfo fileInfo( m_fileName);
+    qDebug() << "文件" << fileOrder << "的大小为：" << fileInfo.size();
+    /*
+     * 经过研究问题主要出在一下几点
+     * 重新下载奔溃的问题 应该是重新创建manager(不确定)和使用downloadProgress信号 添加新下内容
+     * 我们现在使用老的manager并且用readyRead信号添加下载内容   对于manager不确定有时间试试重新创建
+     * 还有重新下载后 文件损坏的问题 这个是因为对于已下载大小读取错误
+     * downloadProgress使用这个获得已下载大小不行 可能对于他是认知有问题
+     * 现在我们直接获得本地文件的字节成功解决问题
+*/
+    a[0] += fileInfo.size();
     qDebug() << "线程：" <<fileOrder << "暂停下载位置:  " << a;
     net.setRawHeader(QByteArray("Range"), QString("bytes=%1-%2")
                                               .arg(a[0])
@@ -100,11 +108,14 @@ void Download::go_on(){
                      );
     net.setRawHeader("User-Agent",
                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+    if (file->open(QIODevice::WriteOnly | QIODevice::Append)) {
+
+    }
 
     reply = manager->get(net);
     connect(reply, &QNetworkReply::finished, this, &Download::onFinished);
+    connect(reply, &QNetworkReply::readyRead, this, &Download::onReadyRead);
     connect(reply, &QNetworkReply::downloadProgress, this, &Download::onDownloadProgress);
-
 }
 
 

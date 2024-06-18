@@ -5,6 +5,8 @@
 #include <QDialog>
 
 #include<QMutexLocker>
+#include<QWaitCondition>
+#include<QTimer>
 
 #include<QUrl>
 #include<QNetworkAccessManager>
@@ -26,6 +28,7 @@ public:
 
 private slots:
     void onFinished();
+    void onReadyRead();
     void onDownloadProgress(const qint64&, const qint64&);
 
 signals:
@@ -35,8 +38,11 @@ signals:
 private:
     QNetworkAccessManager *manager = nullptr; // 网络管理器
     QNetworkReply *reply = nullptr;           // 网络应答
+    QFile *file;
     QString m_fileName;
+
     QMutex mutex;
+    QWaitCondition condition;  // 用于线程等待和唤醒
 
     int fileOrder = 0;
     QVector<qint64> a;
