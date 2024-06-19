@@ -79,6 +79,8 @@ void MainWindow::on_actionNew_triggered()
         qDebug() << 2222222;
         ui->tableWidget->item(row, 2)->setText("完成");
         ui->tableWidget->item(row, 4)->setText("0.00 秒");
+        maintain_queue[row]->deleteLater();
+        maintain_queue[row] = nullptr;
     });
     connect(task, &TaskWindow::start_signal, this, &MainWindow::start_download);
     connect(task, &TaskWindow::schedule_updat_signal, this, [this](const int row, const double a, const double b){
@@ -123,7 +125,8 @@ void MainWindow::on_actionD_triggered()
     location--;
     int n = ui->tableWidget->currentRow();
     ui->tableWidget->removeRow(n);
-    delete maintain_queue[n];
+    if (maintain_queue[n] != nullptr)
+        delete maintain_queue[n];
     maintain_queue.remove(n);
 
     for (int i = n; i < maintain_queue.size(); i++){

@@ -68,7 +68,7 @@
    <property name="geometry">
     <rect>
      <x>230</x>
-     <y>80</y>
+     <y>70</y>
      <width>231</width>
      <height>21</height>
     </rect>
@@ -78,6 +78,15 @@
 border-style: outset;      /* 边框样式为凸出 */
 border-width: 1px;         /* 边框宽度为2像素 */
 border-radius: 5px;</string>
+   </property>
+   <property name="dragEnabled">
+    <bool>false</bool>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+   <property name="clearButtonEnabled">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QWidget" name="layoutWidget">
@@ -174,32 +183,6 @@ border-radius: 5px;</string>
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="layoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>250</x>
-     <y>120</y>
-     <width>181</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
-    <item>
-     <widget class="QCheckBox" name="checkBox">
-      <property name="text">
-       <string>使用默认地址:</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="label_10">
-      <property name="text">
-       <string>保存地址</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
   <widget class="QProgressBar" name="progressBar">
    <property name="geometry">
     <rect>
@@ -257,7 +240,7 @@ border-radius: 5px;</string>
   </widget>
   <widget class="QPushButton" name="pushButton_3">
    <property name="enabled">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="geometry">
     <rect>
@@ -273,7 +256,7 @@ border-radius: 5px;</string>
   </widget>
   <widget class="QPushButton" name="pushButton_4">
    <property name="enabled">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="geometry">
     <rect>
@@ -285,6 +268,35 @@ border-radius: 5px;</string>
    </property>
    <property name="text">
     <string>继续</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>120</y>
+     <width>231</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>保存地址</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBox">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>100</y>
+     <width>81</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>使用默认地址:</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>

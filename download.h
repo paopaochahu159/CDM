@@ -66,7 +66,7 @@ public:
     DownloadManager(const QUrl&, QObject *parent = nullptr);
     ~DownloadManager();
     // 开始下载任务
-    void startDownload();
+    void startDownload(const QString&);
     void stop();
     void go_on();
 
@@ -81,7 +81,7 @@ signals:
 
 private slots:
     // 处理下载完成
-    void merging_data();
+    void merging_data(const QString &);
     void get_SizeAndName(QNetworkReply*);
 
 private:
@@ -92,7 +92,6 @@ private:
     QList<QThread*> threads; // 线程列表
     QList<Download*> tasks; // 任务列表
     QVector<QVector<qint64>> vecSize;
-
 
     QUrl url;
     QString fileName;
